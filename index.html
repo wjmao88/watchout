@@ -1,7 +1,23 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel='stylesheet' href='styles.css'>
+    <!-- stylesheets -->
+    <link rel='stylesheet' href='css/index.css'>
+
+    <!-- libs -->
+    <script src="lib/d3.js" charset="utf-8"></script>
+
+    <!-- sources -->
+    <script src="js/ScreenObject.js"></script>
+    <script src="js/Board.js"></script>
+    <script src="js/Bullet.js"></script>
+
+
+    <!-- init -->
+    <script>
+
+    </script>
+    <title>Watchout</title>
   </head>
   <body>
     <div class="scoreboard">
@@ -9,7 +25,8 @@
       <div class="current">Current score: <span>0</span></div>
       <div class="collisions">Collisions: <span>0</span></div>
     </div>
-    <script src="d3.js" charset="utf-8"></script>
-    <script src="watchout.js"></script>
+    <svg class="board">
+    </svg>
+    <script src="js/watchout.js"></script>
   </body>
 </html>

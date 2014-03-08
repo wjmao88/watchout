@@ -2,6 +2,7 @@
 /* exported Player */
 var Player = function() {
   ScreenObject.apply(this, arguments);
+  this.color = 'red';
 };
 
 Player.protoype = Object.create(ScreenObject.prototype);

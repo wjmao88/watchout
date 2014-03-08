@@ -9,7 +9,8 @@ global.nextId = function(){
 
 var board = new Board('.board');
 
-board.addBullets(30);
+board.addBullets(1);
+board.addPlayer();
 
 setInterval(function() {
   board.moveAllBullets();

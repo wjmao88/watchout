@@ -15,8 +15,8 @@ var Board = function(selector){
 };
 
 Board.prototype.selectors = {
-  bullets: '.bullet',
-  players: '.player'
+  bullets: 'bullet',
+  players: 'player'
 };
 
 Board.prototype.screenObjectTag = 'circle';
@@ -24,7 +24,7 @@ Board.prototype.screenObjectTag = 'circle';
 Board.prototype.update = function(){
   for (var key in this.data) {
     var selection = d3.select(this.selector)
-      .selectAll(this.selectors[key])
+      .selectAll('.' + this.selectors[key])
       .data(this.data[key], function(d) {
         return d.id;
       });
@@ -53,7 +53,18 @@ Board.prototype.moveAllBullets = function(){
     this.data.bullets[i]
       .setPosition(this.randomX(), this.randomY());
   }
-  this.update();
+  d3.select(this.selector)
+    .selectAll('.' + this.selectors.bullets)
+    .data(this.data.bullets, function(d) {
+      return d.id;
+    })
+    .transition()
+    .attr('cx', function(d) {
+      return d.x;
+    })
+    .attr('cy', function(d) {
+      return d.y;
+    });
 };
 
 Board.prototype.addBullets = function(n){

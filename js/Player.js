@@ -1,16 +1,17 @@
-/* global ScreenObject */
+/* global ScreenObject, d3 */
 /* exported Player */
 var Player = function() {
-  ScreenObject.apply(this, arguments);
+  this.x = 0;
+  this.y = 0;
+  this.radius = 0.05;
   this.color = 'red';
+  this.highScore = 0;
+  this.score = 0;
+  this.collisionCount = 0;
 };
 
-Player.protoype = Object.create(ScreenObject.prototype);
-Player.prototype.constructor = Player;
-
-Player.prototype.getOptions = function() {
-  var temp = ScreenObject.prototype.getOptions();
-
-
-  return temp;
+Player.prototype.resetScore = function() {
+  this.highScore = Math.max(this.highScore, this.score);
+  this.score = 0;
 };
+

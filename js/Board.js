@@ -1,101 +1,121 @@
-/* global d3, Bullet, Player */
+/* global d3, Bullet, Enemy, Player */
 /* exported Board */
-var Board = function(selector){
-  this.selector = selector;
-  this.data = {
-    bullets: [],
-    players: []
-  };
-  this.height = 600;
-  this.width = 600;
-
-  d3.select(selector)
-    .attr('height', this.height)
-    .attr('width', this.width);
+var Board = {
+  selector: '.board',
+  tag: 'circle',
+  data: {
+    bullet: [],
+    enemy: [],
+    player: []
+  },
+  h: 600,
+  w: 600
 };
 
-Board.prototype.selectors = {
-  bullets: 'bullet',
-  players: 'player'
+Board.scale = function(num){
+  return num * window.innerHeight;
 };
 
-Board.prototype.objectPropertyMap = {
-  cx: 'x',
-  cy: 'y',
-  r: 'radius',
-  fill: 'color'
+Board.getPlayers = function(){
+  return this.data.player;
 };
 
-Board.prototype.screenObjectTag = 'circle';
-
-Board.prototype.update = function(){
-  for (var key in this.data) {
-    var selection = d3.select(this.selector)
-      .selectAll('.' + this.selectors[key])
-      .data(this.data[key], function(d) {
-        return d.id;
-      });
-
-    //remove exit elemets
-    selection.exit().remove();
-
-    ////add enter elements
-    selection.enter().append(this.screenObjectTag)
-      .attr('class', this.selectors[key]);
-
-    //redraw all elements still existing
-    var map = this.objectPropertyMap;
-// debugger;
-    for (var attrKey in map){
-      selection
-        .attr(attrKey, function(d){
-          return d[map[attrKey]];
-        });
-    }
+Board.getType = function(robot){
+  if (robot instanceof Enemy){
+    return 'enemy';
+  }
+  if (robot instanceof Bullet){
+    return 'bullet';
   }
 };
+//add objects =============================================
+Board.addPlayer = function() {
+  var player = new Player();
+  this.data.player.push(player);
 
-Board.prototype.moveAllBullets = function(){
-  var board = this;
-  for(var i=0; i< this.data.bullets.length; i++){
-    this.data.bullets[i]
-      .setPosition(this.randomX(), this.randomY());
-  }
-  d3.select(this.selector)
-    .selectAll('.' + this.selectors.bullets)
-    .data(this.data.bullets, function(d) {
-      return d.id;
+  d3.select(Board.selector)
+    .selectAll('.player')
+    .data([player], Board.getId)
+    .enter().append(Board.tag+'.player')
+    .attr({
+      r: Board.scale(0.05),
+      cx: Board.scale(0.5),
+      cy: Board.scale(0.5)
     })
-    .transition()
-    .duration(2000)
-    .tween('custom', function(endData) {
-      var bullet = d3.select(this);
-      var startX = bullet.attr('cx');
-      var startY = bullet.attr('cy');
-      var endX = endData.x;
-      var endY = endData.y;
-      return function(t) {
-        for (var i = 0; i < board.data.players.length; i++) {
-          var radiusSum = parseFloat(bullet.attr('r')) + board.data.players[i].radius;
-          var xDiff = parseFloat(bullet.attr('cx')) - board.data.players[i].x;
-          var yDiff = parseFloat(bullet.attr('cy')) - board.data.players[i].y;
-          var separation = Math.sqrt(Math.pow(xDiff, 2) + Math.pow(yDiff, 2));
+    .call(this.drag());
+};
 
-          if (separation < radiusSum) {
-            console.log('collide');
+//robots ==================================================
+Board.addRobot = function(robot){
+  var type = this.getType(robot);
+  this.data[type].push(robot);
+  var targets = this.data.player;
+  d3.select(this.selector).selectAll(this.tag+'.'+type)
+    .data([robot], Board.getId)
+    .enter().append(this.tag)
+    .attr('class', type)
+    .attr('r', Board.scale(robot.radius))
+    .attr({cx: Board.scale(robot.x), cy: Board.scale(robot.y)});
+  var sel = d3.select(this.selector)
+    .selectAll(this.tag+'.'+type)
+    .data([robot], Board.getId);
+  d3.timer(function(){
+    if (robot.removed){
+      return ;
+    }
+    robot.move();
+    for (var i=0; i< targets.length; i++){
+      Board.collision(
+        parseFloat(this.attr('r')),
+        parseFloat(this.attr('cx')),
+        parseFloat(this.attr('cy')),
+        Board.scale(targets[i].radius),
+        Board.scale(targets[i].x),
+        Board.scale(targets[i].y),
+        function(collision){
+          if (collision) {
+            targets[i].score--;
+          } else {
+            targets[i].score++;
           }
         }
-      };
-    })
-    .attr('cx', function(d) {
-      return d.x;
-    })
-    .attr('cy', function(d) {
-      return d.y;
-    });
+      );
+    }
+    if (robot.x < 0 || robot.x > 1 || robot.y < 0 || robot.y > 1){
+      Board.removeRobot(robot);
+    }
+    sel.attr({cx: Board.scale(robot.x), cy: Board.scale(robot.y)});
+  });
+
+  robot.auto();
 };
 
-Board.prototype.drag = function() {
+Board.removeRobot =  function(robot){
+  var type = this.getType(robot);
+  this.data[type].splice(this.data[type].indexOf(robot), 1);
+  d3.selectAll('circle')
+    .data([robot], Board.getId)
+    .data([]).exit().remove();
+  robot.removed = true;
+};
+
+//collision handling ======================================
+Board.playerCollision = function(collision, player){
+  if (collision) {
+    player.score--;
+  } else {
+    player.score++;
+  }
+};
+
+Board.robotCollision = function(collision, robot){
+  if (!collision) {
+    return;
+  }
+  Board.removeRobot(robot);
+};
+//helper methods ==========================================
+Board.drag = function() {
   return d3.behavior.drag()
     .on('drag', function(d) {
       d.x += d3.event.dx;
@@ -113,26 +133,10 @@ Board.prototype.drag = function() {
     });
 };
 
-Board.prototype.addPlayer = function() {
-  this.data.players.push(new Player(this.width / 2, this.height / 2));
-  this.update();
-
-  d3.select('.' + this.selectors.players)
-    .call(this.drag());
+Board.collision = function(r1, x1, y1, r2, x2, y2, callback){
+  callback (r1 + r2 > Math.sqrt(Math.pow(x1-x2, 2) + Math.pow(y1-y2, 2)));
 };
 
-Board.prototype.addBullets = function(n){
-  n = n || 1;
-  for (var i = 0; i < n; i++) {
-    this.data.bullets.push(new Bullet(this.randomX(), this.randomY()));
-  }
-  this.update();
-};
-
-Board.prototype.randomX = function(){
-  return Math.random() * this.width;
-};
-
-Board.prototype.randomY = function(){
-  return Math.random() * this.height;
+Board.getId = function(d){
+  return d.id;
 };

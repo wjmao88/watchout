@@ -12,6 +12,8 @@ var ScreenObject = function(env){
 
   this.speed = 0.01;
   this.radius = 0.05;
+
+  this.energy = 100;
 };
 
 ScreenObject.prototype.auto = function(){
